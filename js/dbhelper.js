@@ -150,7 +150,13 @@ class DBHelper {
    * Restaurant image URL.
    */
   static imageUrlForRestaurant(restaurant) {
+      console.log(restaurant);
     return (`/img/${restaurant.photograph}`);
+  }
+
+  static imageUrlForRestaurant2(restaurant) {
+    let parts = restaurant.photograph.split(".");
+    return parts[0];
   }
 
   /**

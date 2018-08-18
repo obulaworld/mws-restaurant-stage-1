@@ -32,6 +32,10 @@ a:focus {
 	text-decoration: none;
 }
 
+img{
+    width: 50vw;
+}
+
 a img{
 	border: none 0 #fff;
 }
@@ -187,7 +191,6 @@ nav h1 a {
   display: block;
   margin: 0;
   max-width: 100%;
-  min-height: 248px;
   min-width: 100%;
 }
 
