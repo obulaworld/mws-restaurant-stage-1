@@ -23,7 +23,6 @@ self.addEventListener('install', (event) => {
                 '/img/8.jpg',
                 '/img/9.jpg',
                 '/img/10.jpg',
-
             ]);
         })
     );
@@ -47,7 +46,6 @@ self.addEventListener('activate',(event) => {
 
 self.addEventListener('fetch', (event) => {
     let requestUrl = new URL(event.request.url);
-
     if (requestUrl.origin === location.origin) {
         if (requestUrl.pathname === '/') {
             event.respondWith(caches.match('/index.html'));
@@ -55,17 +53,25 @@ self.addEventListener('fetch', (event) => {
         }
     }
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            if (response) return response;
-            return fetch(event.request).then(function(networkResponse) {
-                caches.open(staticCacheName).then((cache) => {
-                    cache.put(requestUrl, networkResponse);
-                })
-                return networkResponse;
-            });
+        caches.open(staticCacheName).then(function(cache) {
+          return cache.match(event.request).then(function(response) {
+            if (response) {
+              console.log('Service Worker: Returning Cached Response', response);
+              return response;
+            } else {
+              fetch(event.request).then(function(response) {
+                console.log('Service Worker: Returning Response from Server', response);
+                cache.put(event.request, response.clone());
+                return response;
+              }).catch((error) => {
+                console.log('Fetch failed; returning offline page instead.', error);
+                return caches.match('/offline.html');
+              });
+            }
+          });
         })
-    );
-});
+      );
+    });
 
 self.addEventListener('message', (event) => {
     if (event.data.action === 'skipWaiting') {
