@@ -1,3 +1,16 @@
+/// / This works on all devices/browsers, and uses IndexedDBShim as a final fallback
+const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+
+// Open (or create) the database
+const open = indexedDB.open("restaurants", 1);
+
+// Create the schema
+open.onupgradeneeded = () => {
+    let db = open.result;
+    let store = db.createObjectStore("restaurants", {keyPath: "id",autoIncrement:true });
+    store.createIndex('restaurant_id', 'id', {unique: true});
+
+};
 /**
  * Common database helper functions.
  */
@@ -8,66 +21,121 @@ class DBHelper {
    * Change this to restaurants.json file location on your server.
    */
   static get DATABASE_URL() {
-    const port = 8000 // Change this to your server port
+    const port = 1337 // Change this to your server port
     return `http://localhost:${port}/data/restaurants.json`;
   }
 
+  static fecthFromDb(){
+    var db;
+    open.onsuccess = function(event) {
+        db = event.target.result; 
+        alert('hjjjjj');
+        let tx = db.transaction("restaurants", "readwrite");
+        let store = tx.objectStore("restaurants");
+        let index = store.index("restaurant_id");
+        let restaurants = index.getAll();
+        restaurants.onsuccess = () => {
+            return restaurants.result;
+        }
+    };
+  }
+
+  static fecthOneFromDb(id){
+    var db;
+    alert('hi');
+    open.onsuccess = function(event) {
+        db = event.target.result; 
+        let tx = db.transaction("restaurants", "readwrite");
+        let store = tx.objectStore("restaurants");
+        let index = store.index("restaurant_id");
+        let restaurant = index.get(id);
+        restaurant.onsuccess = ()=>{
+            return restaurant.result;
+        }
+    };
+  }
+
+  static storeInDb(data){
+    var db;
+    console.log('hi',data);
+    open.onsuccess = function(event) {
+      console.log('hiooo',dt);
+        db = event.target.result; 
+        let tx = db.transaction("restaurants", "readwrite");
+        let store = tx.objectStore("restaurants");
+        data.forEach(function(dt){
+            store.put(dt);
+        });
+    };
+  }
 
 
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    fetch('http://localhost:1337/restaurants', { method: 'GET', headers: { 'Content-Type': 'application/json; charset=utf-8', } })
-      .then((response) => { 
-        return response.json();
-      }).then((data) => {
-        console.log(data);
-        callback(null, data);
-      }).catch((err) => { 
-        console.log('Request failed', err); 
-      });
-    // let xhr = new XMLHttpRequest();
-    // xhr.open('GET', DBHelper.DATABASE_URL);
-    // xhr.onload = () => {
-    //   if (xhr.status === 200) { // Got a success response from server!
-    //     const json = JSON.parse(xhr.responseText);
-    //     const restaurants = json.restaurants;
-    //     callback(null, restaurants);
-    //   } else { // Oops!. Got an error from server.
-    //     const error = (`Request failed. Returned status of ${xhr.status}`);
-    //     callback(error, null);
-    //   }
-    // };
-    // xhr.send();
+    var db;
+    open.onsuccess = function(event) {
+        db = event.target.result; 
+        let tx = db.transaction("restaurants", "readwrite");
+        let store = tx.objectStore("restaurants");
+        let index = store.index("restaurant_id");
+        let restaurants = index.getAll();
+        restaurants.onsuccess = () => {
+          if(restaurants.result.length){
+            callback(null,restaurants.result);
+          } else {
+            fetch('http://localhost:1337/restaurants', { method: 'GET', headers: { 'Content-Type': 'application/json; charset=utf-8', } })
+            .then((response) => { 
+              return response.json();
+            }).then((data) => {
+              callback(null, data);
+              let tx = db.transaction("restaurants", "readwrite");
+              let store = tx.objectStore("restaurants");
+              data.forEach(function(dt){
+                  store.put(dt);
+              });
+            }).catch((err) => { 
+              console.log('Request failed', err); 
+            });
+          }
+        }
+    };
+  
   }
 
   /**
    * Fetch a restaurant by its ID.
    */
   static fetchRestaurantById(id, callback) {
-    // fetch all restaurants with proper error handling.
-    fetch(`http://localhost:1337/restaurants/${id}`, { method: 'GET', headers: { 'Content-Type': 'application/json; charset=utf-8', } })
-      .then((response) => { 
-        return response.json();
-      }).then((data) => {
-        console.log(data);
-        callback(null, data);
-      }).catch((err) => { 
-        console.log('Request failed', err); 
-      });
-    // DBHelper.fetchRestaurants((error, restaurants) => {
-    //   if (error) {
-    //     callback(error, null);
-    //   } else {
-    //     const restaurant = restaurants.find(r => r.id == id);
-    //     if (restaurant) { // Got the restaurant
-    //       callback(null, restaurant);
-    //     } else { // Restaurant does not exist in the database
-    //       callback('Restaurant does not exist', null);
-    //     }
-    //   }
-    // });
+    var db;
+    open.onsuccess = function(event) {
+        db = event.target.result; 
+        let tx = db.transaction("restaurants", "readwrite");
+        let store = tx.objectStore("restaurants");
+        let index = store.index("restaurant_id");
+        let restaurant = index.get(id);
+        restaurants.onsuccess = () => {
+          if(restaurants.result.length){
+            callback(null,restaurants.result);
+          } else {
+            fetch(`http://localhost:1337/restaurants/${id}`, { method: 'GET', headers: { 'Content-Type': 'application/json; charset=utf-8', } })
+            .then((response) => { 
+              return response.json();
+            }).then((data) => {
+              callback(null, data);
+              let tx = db.transaction("restaurants", "readwrite");
+              let store = tx.objectStore("restaurants");
+              data.forEach(function(dt){
+                  let put = store.put(dt);
+              });
+            }).catch((err) => { 
+              console.log('Request failed', err); 
+            });
+          }
+        }
+    };
+    
   }
 
   /**

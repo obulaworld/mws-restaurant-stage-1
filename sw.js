@@ -7,12 +7,13 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(staticCacheName).then((cache) => {
             return cache.addAll([
+                '/',
+                '/manifest.json',
                 '/index.html',
                 '/restaurant.html',
                 '/css/styles.css',
                 '/js/main.js',
                 '/js/restaurant_info.js',
-                '/js/dbhelper.js',
                 '/img/1.jpg',
                 '/img/2.jpg',
                 '/img/3.jpg',
